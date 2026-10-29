@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study dashboard</title>
+<style>
+:root{--bg:#080b1a;--ink:#eef1fb;--mut:#8f98b5;--line:rgba(255,255,255,.09);--pan:rgba(255,255,255,.045);--ac:#7b8cff;--glow:123,140,255}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(70% 40% at 12% 0,rgba(123,140,255,.17),transparent 70%),radial-gradient(50% 35% at 92% 8%,rgba(63,224,184,.09),transparent 70%),var(--bg);color:var(--ink);font:14px/1.45 "SF Pro Display","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;min-height:100vh}
+.app{max-width:1180px;margin:0 auto;padding:22px 18px 26px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:30px;font-weight:300;letter-spacing:-.02em}
+header p{margin:4px 0 0;color:var(--mut)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips span{padding:6px 12px;border-radius:999px;background:var(--pan);border:1px solid var(--line);color:var(--mut);font-size:13px}
+#goal{width:100%;margin:18px 0;padding:14px 18px;font:inherit;font-size:17px;color:var(--ink);background:var(--pan);border:1px solid var(--line);border-radius:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.p{background:var(--pan);border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+h2{margin:0;font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{font-weight:400;color:var(--mut);font-size:13px}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.in{width:100%;font:inherit;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color-scheme:dark}
+textarea.in{height:104px;resize:none}
+.row{display:flex;gap:8px;align-items:center}
+.pri{background:var(--ac);color:#0b0f22;font-weight:600;border-radius:10px;padding:8px 14px}
+.soft{background:rgba(255,255,255,.08);border-radius:10px;padding:8px 14px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04)}
+li>span,li>div{flex:1;min-width:0}
+li>div{display:grid}
+li small{color:var(--mut)}
+li.d span{text-decoration:line-through;color:var(--mut)}
+li button{color:var(--mut);padding:0 4px}
+.empty{color:var(--mut);padding:8px 2px}
+.meter{height:6px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),#3fe0b8);transition:width .3s}
+.days{padding:3px 10px;border-radius:999px;background:rgba(63,224,184,.14);color:#8fecd2;font-size:13px}
+.days.warm{background:rgba(255,196,94,.15);color:#ffd48a}
+.days.hot{background:rgba(255,120,140,.17);color:#ff9fae}
+/* timer */
+#timer{--w:#6f8dff;--w2:#4a3fd6;--glow:111,141,255;align-items:center}
+#timer[data-mode=short]{--w:#3fe0b8;--w2:#1a8fb0;--glow:63,224,184}
+#timer[data-mode=long]{--w:#ff93b8;--w2:#a35cf0;--glow:255,147,184}
+.modes{display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(255,255,255,.06)}
+.modes button{font-size:13px;padding:6px 14px;border-radius:999px;color:var(--mut)}
+.modes button.on{background:rgba(255,255,255,.14);color:#fff}
+.orb{position:relative;width:214px;height:214px;border-radius:50%;overflow:hidden;isolation:isolate;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -30px 50px rgba(0,0,0,.28),0 0 46px rgba(var(--glow),.28)}
+.orb::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:50%;background:radial-gradient(60% 40% at 30% 14%,rgba(255,255,255,.2),transparent 70%)}
+.orb.done{animation:pl 1.2s ease-in-out 3}
+@keyframes pl{50%{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 0 90px rgba(var(--glow),.75)}}
+.water{position:absolute;inset:0;transform:translateY(calc((1 - var(--p,0)) * (100% + 20px)));transition:transform .5s linear}
+.wb{position:absolute;inset:0;background:linear-gradient(var(--w),var(--w2))}
+.wave{position:absolute;left:0;top:-16px;width:200%;height:16px;animation:sl 6s linear infinite}
+.wave.b{top:-21px;opacity:.45;animation-duration:9s;animation-direction:reverse}
+.wave path{fill:var(--w)}
+@keyframes sl{to{transform:translateX(-50%)}}
+.read{position:absolute;inset:0;z-index:2;display:grid;place-content:center;text-align:center}
+#time{font-size:54px;font-weight:300;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 20px rgba(0,0,0,.35)}
+#st{margin-top:8px;font-size:13px;color:rgba(255,255,255,.78)}
+#go{min-width:96px;background:#f3f5ff;color:#0b0f22;box-shadow:0 0 28px rgba(var(--glow),.5);border-radius:999px;padding:11px 22px;font-weight:600}
+.step{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);font-size:18px;padding:0}
+.step:disabled{opacity:.3;cursor:default}
+/* stats */
+#bars{display:flex;gap:8px;height:112px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.col{flex:1;width:100%;display:flex;align-items:flex-end}
+.col i{width:100%;min-height:3px;border-radius:6px 6px 3px 3px;background:linear-gradient(var(--ac),#4a3fd6)}
+.bar span{font-size:11px;color:var(--mut)}
+/* cards */
+.q{font-size:17px;font-weight:500;min-height:46px}
+.a{padding:10px 12px;border-radius:12px;background:rgba(63,224,184,.12);color:#b9f5e4}
+.btns{display:flex;gap:8px}.btns button{flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,.08)}.btns .pri{background:var(--ac)}
+/* grade */
+.f3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.f3 label{display:grid;gap:4px;color:var(--mut);font-size:12px}
+#need{font-size:15px;padding:10px 12px;border-radius:12px;background:rgba(123,140,255,.12)}
+#need b{font-size:22px;font-weight:600}
+/* habits */
+.hr{display:grid;grid-template-columns:1fr repeat(7,22px) 16px;gap:6px;align-items:center}
+.hr b{font-weight:400;font-size:11px;color:var(--mut);text-align:center}
+.hn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.07)}
+.dot.on{background:var(--ac);box-shadow:0 0 12px rgba(123,140,255,.6)}
+.dot:disabled{opacity:.25;cursor:default}
+.foot{margin:16px 0 0;color:var(--mut);font-size:12px;text-align:center}
+@media (prefers-reduced-motion:reduce){.wave,.orb.done{animation:none}.water,.meter i{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div><h1 id="hello"></h1><p id="date"></p></div>
+  <div class="chips"><span id="todayMin"></span><span id="streak"></span></div>
+</header>
+<input id="goal" class="in" placeholder="Today's one thing you must finish" aria-label="Today's one thing">
+<div class="grid">
+
+<section class="p" id="timer" data-mode="focus">
+  <div class="modes"><button class="on" data-a="m" data-m="focus" data-min="25">Focus</button><button data-a="m" data-m="short" data-min="5">Short break</button><button data-a="m" data-m="long" data-min="15">Long break</button></div>
+  <div class="orb" id="orb">
+    <div class="water" id="water"><div class="wb"></div>
+      <svg class="wave b" viewBox="0 0 400 16" preserveAspectRatio="none"><path d="M0 8Q50 0 100 8T200 8T300 8T400 8V16H0Z"/></svg>
+      <svg class="wave" viewBox="0 0 400 16" preserveAspectRatio="none"><path d="M0 8Q50 0 100 8T200 8T300 8T400 8V16H0Z"/></svg>
+    </div>
+    <div class="read" role="timer"><div id="time">25:00</div><div id="st">Ready to focus</div></div>
+  </div>
+  <div class="row"><button class="step" id="minus" aria-label="Remove one minute">&minus;</button><button id="go">Start</button><button class="step" id="plus" aria-label="Add one minute">+</button><button class="soft" id="rs">Reset</button></div>
+</section>
+
+<section class="p">
+  <h2>Tasks <small id="tcount"></small></h2>
+  <div class="meter"><i id="tbar"></i></div>
+  <ul id="tasks"></ul>
+  <input class="in" id="tin" placeholder="Add a task and press Enter" aria-label="New task">
+</section>
+
+<section class="p">
+  <h2>Exam countdown</h2>
+  <ul id="exams"></ul>
+  <div class="row"><input class="in" id="en" placeholder="Exam name" aria-label="Exam name"><input class="in" id="ed" type="date" aria-label="Exam date" style="width:150px"><button class="pri" id="eadd">Add</button></div>
+</section>
+
+<section class="p">
+  <h2>This week <small id="wk"></small></h2>
+  <div id="bars"></div>
+</section>
+
+<section class="p">
+  <h2>Flashcards <small id="cc"></small></h2>
+  <div id="card"></div>
+  <input class="in" id="cq" placeholder="Question" aria-label="Card question">
+  <div class="row"><input class="in" id="ca" placeholder="Answer" aria-label="Card answer"><button class="pri" id="cadd">Add</button></div>
+</section>
+
+<section class="p">
+  <h2>Final exam calculator</h2>
+  <div class="f3">
+    <label>Current grade %<input class="in" id="gc" type="number" value="78"></label>
+    <label>Final weight %<input class="in" id="gw" type="number" value="40"></label>
+    <label>Target grade %<input class="in" id="gt" type="number" value="85"></label>
+  </div>
+  <div id="need"></div>
+</section>
+
+<section class="p">
+  <h2>Habits <small>this week</small></h2>
+  <div id="habits" style="display:grid;gap:8px"></div>
+  <input class="in" id="hin" placeholder="Add a habit and press Enter" aria-label="New habit">
+</section>
+
+<section class="p">
+  <h2>Brain dump</h2>
+  <textarea class="in" id="note" placeholder="Questions to ask, ideas, things to look up" aria-label="Notes"></textarea>
+  <button class="soft" id="noise">Brown noise: off</button>
+</section>
+
+</div>
+<p class="foot">Everything is saved in this browser only.</p>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const add = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-CA'); };
+const today = () => add(0);
+let mem = null;
+const persist = () => { try { localStorage.setItem('studyos', JSON.stringify(S)); } catch (e) { mem = S; } };
+const seed = () => ({goal:'', note:'', logs:{},
+  tasks:[{t:'Problem set 7',d:0},{t:'Read chapter 6',d:0},{t:'Clear flashcards',d:0}],
+  exams:[{n:'Calculus II final',d:'2026-12-16'},{n:'Psychology final',d:'2026-12-18'}],
+  cards:[{q:'When does the ratio test fail to decide?',a:'When the limit equals 1',b:1,due:today()}],
+  habits:{names:['Sleep 7h+','Phone in another room','Walk'],done:{}}});
+let S; try { S = JSON.parse(localStorage.getItem('studyos')); } catch (e) {}
+S = S || mem || seed();
+
+/* header + stats */
+function rHead() {
+  const h = new Date().getHours();
+  $('#hello').textContent = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  $('#date').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+  $('#todayMin').textContent = (S.logs[today()] || 0) + ' min focused today';
+  let n = 0, d = new Date();
+  if (!S.logs[today()]) d.setDate(d.getDate() - 1);
+  while (S.logs[d.toLocaleDateString('en-CA')] > 0) { n++; d.setDate(d.getDate() - 1); }
+  $('#streak').textContent = 'Streak: ' + n + (n === 1 ? ' day' : ' days');
+}
+function rStats() {
+  const ds = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d; });
+  const m = k => S.logs[k.toLocaleDateString('en-CA')] || 0;
+  const mx = Math.max(60, ...ds.map(m));
+  $('#bars').innerHTML = ds.map(d => `<div class="bar" title="${m(d)} min"><div class="col"><i style="height:${m(d) / mx * 100}%"></i></div><span>${'SMTWTFS'[d.getDay()]}</span></div>`).join('');
+  $('#wk').textContent = (ds.reduce((a, d) => a + m(d), 0) / 60).toFixed(1) + ' h';
+  rHead();
+}
+
+/* tasks */
+function rTasks() {
+  const n = S.tasks.filter(x => x.d).length;
+  $('#tasks').innerHTML = S.tasks.map((x, i) => `<li class="${x.d ? 'd' : ''}"><input type="checkbox" data-a="tk" data-i="${i}" ${x.d ? 'checked' : ''} aria-label="Done"><span>${esc(x.t)}</span><button data-a="tx" data-i="${i}" aria-label="Delete task">×</button></li>`).join('') || '<li class="empty">No tasks yet.</li>';
+  $('#tbar').style.width = (S.tasks.length ? n / S.tasks.length * 100 : 0) + '%';
+  $('#tcount').textContent = n + ' of ' + S.tasks.length;
+}
+
+/* exams */
+function rExams() {
+  S.exams.sort((a, b) => a.d < b.d ? -1 : 1);
+  const t = new Date(today());
+  $('#exams').innerHTML = S.exams.map((x, i) => {
+    const n = Math.round((new Date(x.d) - t) / 864e5);
+    return `<li><div><b>${esc(x.n)}</b><small>${x.d}</small></div><span class="days ${n <= 7 ? 'hot' : n <= 21 ? 'warm' : ''}" style="flex:none">${n < 0 ? 'Past' : n === 0 ? 'Today' : n + ' days'}</span><button data-a="ex" data-i="${i}" aria-label="Delete exam">×</button></li>`;
+  }).join('') || '<li class="empty">Add your first exam below.</li>';
+}
+
+/* flashcards (Leitner boxes: 1, 3, 7, 14, 30 days) */
+let cur = null, show = false;
+function rCards() {
+  const due = S.cards.filter(c => c.due <= today());
+  cur = due[0];
+  $('#cc').textContent = due.length + ' due of ' + S.cards.length;
+  $('#card').innerHTML = cur
+    ? `<div class="q">${esc(cur.q)}</div>` + (show ? `<div class="a">${esc(cur.a)}</div><div class="btns"><button data-a="miss">Missed</button><button class="pri" data-a="got">Got it</button></div>` : '<button class="pri" data-a="flip">Show answer</button>')
+    : '<div class="empty">All caught up. Add more cards below.</div>';
+}
+
+/* habits */
+function rHabits() {
+  const m = new Date(); m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
+  const ds = [...Array(7)].map((_, i) => { const d = new Date(m); d.setDate(m.getDate() + i); return d.toLocaleDateString('en-CA'); });
+  $('#habits').innerHTML = '<div class="hr"><span></span>' + 'MTWTFSS'.split('').map(x => `<b>${x}</b>`).join('') + '<span></span></div>' +
+    S.habits.names.map((n, r) => `<div class="hr"><span class="hn" title="${esc(n)}">${esc(n)}</span>${ds.map(d => `<button class="dot ${S.habits.done[n + '|' + d] ? 'on' : ''}" data-a="hb" data-k="${esc(n)}|${d}" ${d > today() ? 'disabled' : ''} aria-label="${esc(n)} ${d}"></button>`).join('')}<button data-a="hx" data-i="${r}" aria-label="Delete habit" style="color:var(--mut)">×</button></div>`).join('');
+}
+
+/* grade calculator */
+function calc() {
+  const c = +$('#gc').value, w = +$('#gw').value / 100, t = +$('#gt').value;
+  if (!w) { $('#need').textContent = 'Enter the final exam weight.'; return; }
+  const r = (t - c * (1 - w)) / w;
+  $('#need').innerHTML = r > 100 ? `You'd need <b>${r.toFixed(1)}%</b>. Out of reach, so consider a lower target.`
+    : r <= 0 ? 'You already have your target locked in.' : `You need <b>${r.toFixed(1)}%</b> on the final.`;
+}
+
+/* timer */
+let mode = 'focus', total = 1500, left = 1500, endAt = 0, tm = null, ctx = null, noise = null;
+const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+function rTimer() {
+  $('#time').textContent = fmt(left);
+  $('#water').style.setProperty('--p', 1 - left / total);
+  $('#go').textContent = tm ? 'Pause' : left < total && left > 0 ? 'Resume' : 'Start';
+  $('#minus').disabled = $('#plus').disabled = !!tm;
+  $('#st').textContent = left === 0 ? (mode === 'focus' ? 'Nice work. Take a break' : 'Break over') : tm ? (mode === 'focus' ? 'Focusing' : 'On a break') : left < total ? 'Paused' : mode === 'focus' ? 'Ready to focus' : 'Ready to rest';
+  document.title = (tm ? fmt(left) + ' · ' : '') + 'Study dashboard';
+}
+function audio() { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+function chime() {
+  try { [523, 659, 784].forEach((f, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + i * .28;
+    o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.18, t + .03); g.gain.exponentialRampToValueAtTime(.0001, t + .9);
+    o.start(t); o.stop(t + .95);
+  }); } catch (e) {}
+}
+function stop() { clearInterval(tm); tm = null; }
+function tick() {
+  left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+  if (left === 0) {
+    stop(); chime(); $('#orb').classList.add('done');
+    if (mode === 'focus') { S.logs[today()] = (S.logs[today()] || 0) + Math.round(total / 60); persist(); rStats(); }
+  }
+  rTimer();
+}
+function setMin(m) { stop(); $('#orb').classList.remove('done'); total = left = Math.min(180, Math.max(1, m)) * 60; rTimer(); }
+$('#go').onclick = () => {
+  if (tm) { stop(); return rTimer(); }
+  audio(); if (left <= 0) left = total;
+  $('#orb').classList.remove('done'); endAt = Date.now() + left * 1000; tm = setInterval(tick, 250); rTimer();
+};
+$('#rs').onclick = () => setMin(total / 60);
+$('#minus').onclick = () => setMin(total / 60 - 1);
+$('#plus').onclick = () => setMin(total / 60 + 1);
+
+/* focus sound: brown noise */
+$('#noise').onclick = () => {
+  audio(); if (!ctx) return;
+  if (noise) { noise.stop(); noise = null; $('#noise').textContent = 'Brown noise: off'; return; }
+  const b = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate), d = b.getChannelData(0); let l = 0;
+  for (let i = 0; i < d.length; i++) { l = (l + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3.5; }
+  noise = ctx.createBufferSource(); noise.buffer = b; noise.loop = true;
+  const g = ctx.createGain(); g.gain.value = .35; noise.connect(g); g.connect(ctx.destination); noise.start();
+  $('#noise').textContent = 'Brown noise: on';
+};
+
+/* actions */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-a]'); if (!b) return;
+  const a = b.dataset.a, i = +b.dataset.i;
+  if (a === 'm') {
+    document.querySelectorAll('.modes button').forEach(x => x.classList.toggle('on', x === b));
+    mode = b.dataset.m; $('#timer').dataset.mode = mode; setMin(+b.dataset.min); return;
+  }
+  if (a === 'tk') { S.tasks[i].d = !S.tasks[i].d; rTasks(); }
+  else if (a === 'tx') { S.tasks.splice(i, 1); rTasks(); }
+  else if (a === 'ex') { S.exams.splice(i, 1); rExams(); }
+  else if (a === 'flip') { show = true; rCards(); return; }
+  else if (a === 'got') { cur.b = Math.min(5, cur.b + 1); cur.due = add([1, 3, 7, 14, 30][cur.b - 1]); show = false; rCards(); }
+  else if (a === 'miss') { cur.b = 1; cur.due = add(1); show = false; rCards(); }
+  else if (a === 'hb') { S.habits.done[b.dataset.k] = !S.habits.done[b.dataset.k]; rHabits(); }
+  else if (a === 'hx') { S.habits.names.splice(i, 1); rHabits(); }
+  persist();
+});
+$('#tin').onkeydown = e => { if (e.key === 'Enter' && e.target.value.trim()) { S.tasks.push({t:e.target.value.trim(), d:0}); e.target.value = ''; rTasks(); persist(); } };
+$('#hin').onkeydown = e => { if (e.key === 'Enter' && e.target.value.trim()) { S.habits.names.push(e.target.value.trim()); e.target.value = ''; rHabits(); persist(); } };
+$('#eadd').onclick = () => { if ($('#en').value.trim() && $('#ed').value) { S.exams.push({n:$('#en').value.trim(), d:$('#ed').value}); $('#en').value = ''; rExams(); persist(); } };
+$('#cadd').onclick = () => { if ($('#cq').value.trim() && $('#ca').value.trim()) { S.cards.push({q:$('#cq').value.trim(), a:$('#ca').value.trim(), b:1, due:today()}); $('#cq').value = $('#ca').value = ''; rCards(); persist(); } };
+$('#goal').value = S.goal; $('#goal').oninput = e => { S.goal = e.target.value; persist(); };
+$('#note').value = S.note; $('#note').oninput = e => { S.note = e.target.value; persist(); };
+['#gc', '#gw', '#gt'].forEach(s => $(s).oninput = calc);
+
+rStats(); rTasks(); rExams(); rCards(); rHabits(); calc(); rTimer();
+</script>
+</body>
+</html>
